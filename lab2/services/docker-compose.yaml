@@ -1,0 +1,117 @@
+services:
+  user-service:
+    build:
+      context: ./user-service
+      dockerfile: Dockerfile
+    image: user_service:latest
+    volumes:
+      - user-service-data:/var/lib/user-service
+    networks:
+      - backend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    image: auth_service:latest
+    volumes:
+      - auth-service-data:/var/lib/auth-service
+    networks:
+      - backend
+    depends_on:
+      user-service:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  package-service:
+    build:
+      context: ./package-service
+      dockerfile: Dockerfile
+    image: package_service:latest
+    volumes:
+      - package-service-data:/var/lib/package-service
+    networks:
+      - backend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  delivery-service:
+    build:
+      context: ./delivery-service
+      dockerfile: Dockerfile
+    image: delivery_service:latest
+    volumes:
+      - delivery-service-data:/var/lib/delivery-service
+    networks:
+      - backend
+    depends_on:
+      user-service:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - backend
+    depends_on:
+      user-service:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+      package-service:
+        condition: service_healthy
+      delivery-service:
+        condition: service_healthy
+    restart: unless-stopped
+
+  swagger-ui:
+    image: swaggerapi/swagger-ui
+    volumes:
+      - ./docs:/usr/share/nginx/html/specs:ro
+    environment:
+      BASE_URL: /docs
+      URLS: >-
+        [
+          {"url":"/docs/specs/auth-service.yaml","name":"Auth Service"},
+          {"url":"/docs/specs/user-service.yaml","name":"User Service"},
+          {"url":"/docs/specs/package-service.yaml","name":"Package Service"},
+          {"url":"/docs/specs/delivery-service.yaml","name":"Delivery Service"}
+        ]
+      URLS_PRIMARY_NAME: "Auth Service"
+    networks:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  user-service-data:
+  auth-service-data:
+  package-service-data:
+  delivery-service-data:
+
+networks:
+  backend:
+    driver: bridge

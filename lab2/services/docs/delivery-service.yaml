@@ -1,0 +1,134 @@
+openapi: 3.0.3
+info:
+  title: Delivery Service
+  version: 1.0.0
+  description: Delivery management. Validates sender and recipient existence in user-service before creation.
+
+servers:
+  - url: http://localhost:8080
+    description: nginx gateway
+
+tags:
+  - name: deliveries
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Delivery:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        sender_id:
+          type: integer
+          format: int64
+          example: 1
+        recipient_id:
+          type: integer
+          format: int64
+          example: 2
+        package_id:
+          type: integer
+          format: int64
+          example: 1
+        address:
+          type: string
+          example: Moscow, Lenina 1
+        status:
+          type: string
+          example: pending
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-03-29T18:00:00Z"
+
+    CreateDeliveryRequest:
+      type: object
+      required: [sender_id, recipient_id, package_id, address]
+      properties:
+        sender_id:
+          type: integer
+          format: int64
+          example: 1
+        recipient_id:
+          type: integer
+          format: int64
+          example: 2
+        package_id:
+          type: integer
+          format: int64
+          example: 1
+        address:
+          type: string
+          example: Moscow, Lenina 1
+
+    CreateDeliveryResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        message:
+          type: string
+          example: Delivery created successfully
+
+paths:
+  /v1/deliveries:
+    post:
+      tags: [deliveries]
+      summary: Create a new delivery
+      description: |
+        Creates a delivery. Before saving, the service validates that both
+        `sender_id` and `recipient_id` exist in user-service.
+        Returns **400** if either user is not found.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDeliveryRequest'
+            example:
+              sender_id: 1
+              recipient_id: 2
+              package_id: 1
+              address: Moscow, Lenina 1
+      responses:
+        '201':
+          description: Delivery created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateDeliveryResponse'
+              example:
+                id: 1
+                message: Delivery created successfully
+        '400':
+          description: Missing fields or sender/recipient not found in user-service
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+              examples:
+                missing_field:
+                  summary: Missing required field
+                  value:
+                    message: "Bad request"
+                user_not_found:
+                  summary: Sender does not exist
+                  value:
+                    message: "User with id 1 not found"
+        '500':
+          description: user-service is unavailable

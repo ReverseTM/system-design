@@ -1,0 +1,13 @@
+worker-threads: 4
+worker-fs-threads: 2
+logger-level: info
+
+is-testing: false
+
+server-port: 8080
+
+sqlite-db-path: "/var/lib/auth-service/credential.db"
+
+user-service-url: "http://user-service:8080/users"
+
+jwt-secret: "change-me-in-production-use-a-long-random-secret"

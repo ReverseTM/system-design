@@ -1,0 +1,75 @@
+components:
+  schemas:
+    RegisterRequestBody:
+      type: object
+      additionalProperties: false
+      properties:
+        login:
+          type: string
+        password:
+          type: string
+        email:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+      required:
+        - login
+        - password
+        - email
+        - first_name
+        - last_name
+
+    RegisterResponseBody:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+          format: int64
+        message:
+          type: string
+          default: ""
+      required:
+        - id
+        - message
+
+    LoginRequestBody:
+      type: object
+      additionalProperties: false
+      properties:
+        login:
+          type: string
+        password:
+          type: string
+      required:
+        - login
+        - password
+
+    LoginResponseBody:
+      type: object
+      additionalProperties: false
+      properties:
+        token:
+          type: string
+      required:
+        - token
+
+    ValidateResponseBody:
+      type: object
+      additionalProperties: false
+      properties:
+        login:
+          type: string
+          default: ""
+        issued_at:
+          type: integer
+          default: 0
+        expires_at:
+          type: integer
+          default: 0
+      required:
+        - login
+        - issued_at
+        - expires_at

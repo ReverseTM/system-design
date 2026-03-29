@@ -1,0 +1,83 @@
+components:
+  schemas:
+    Package:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+          format: int64
+        user_id:
+          type: integer
+          format: int64
+        weight:
+          type: number
+        length:
+          type: number
+        width:
+          type: number
+        height:
+          type: number
+        description:
+          type: string
+        created_at:
+          type: string
+      required:
+        - id
+        - user_id
+        - weight
+        - length
+        - width
+        - height
+        - description
+        - created_at
+
+    CreatePackageRequestBody:
+      type: object
+      additionalProperties: false
+      properties:
+        user_id:
+          type: integer
+          format: int64
+        weight:
+          type: number
+        length:
+          type: number
+        width:
+          type: number
+        height:
+          type: number
+        description:
+          type: string
+      required:
+        - user_id
+        - weight
+        - length
+        - width
+        - height
+        - description
+
+    CreatePackageResponseBody:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+          format: int64
+        message:
+          type: string
+          default: ""
+      required:
+        - id
+        - message
+
+    GetPackagesResponseBody:
+      type: object
+      additionalProperties: false
+      properties:
+        packages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Package'
+      required:
+        - packages
