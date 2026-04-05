@@ -8,4 +8,4 @@ server-port: 8080
 
 sqlite-db-path: "/var/lib/delivery-service/deliveries.db"
 
-user-service-url: "http://user-service:8080"
+user-service-url: "http://user-service:8080/v1"
