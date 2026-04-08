@@ -1,0 +1,55 @@
+components_manager:
+    task_processors:
+        main-task-processor:
+            worker_threads: $worker-threads
+
+        fs-task-processor:
+            worker_threads: $worker-fs-threads
+
+    default_task_processor: main-task-processor
+
+    coro_pool:
+        stack_usage_monitor_enabled: false
+
+    components:
+        server:
+            listener:
+                port: $server-port
+                task_processor: main-task-processor
+
+        logging:
+            fs-task-processor: fs-task-processor
+            loggers:
+                default:
+                    file_path: '@stderr'
+                    level: $logger-level
+                    overflow_behavior: discard
+
+        testsuite-support: {}
+
+        dns-client:
+            fs-task-processor: fs-task-processor
+
+        handler-ping:
+            path: /ping
+            method: GET
+            task_processor: main-task-processor
+            throttling_enabled: false
+            url_trailing_slash: strict-match
+
+        db-postgres:
+            dbconnection: $dbconnection
+
+        storage-package: {}
+
+        usecase-package: {}
+
+        handler-create-package:
+            path: /v1/packages
+            method: POST
+            task_processor: main-task-processor
+
+        handler-get-packages:
+            path: /v1/packages
+            method: GET
+            task_processor: main-task-processor

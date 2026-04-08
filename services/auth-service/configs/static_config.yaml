@@ -1,0 +1,66 @@
+components_manager:
+    task_processors:
+        main-task-processor:
+            worker_threads: $worker-threads
+
+        fs-task-processor:
+            worker_threads: $worker-fs-threads
+
+    default_task_processor: main-task-processor
+
+    coro_pool:
+        stack_usage_monitor_enabled: false
+
+    components:
+        server:
+            listener:
+                port: $server-port
+                task_processor: main-task-processor
+
+        logging:
+            fs-task-processor: fs-task-processor
+            loggers:
+                default:
+                    file_path: '@stderr'
+                    level: $logger-level
+                    overflow_behavior: discard
+
+        testsuite-support: {}
+
+        http-client:
+        http-client-core:
+            fs-task-processor: fs-task-processor
+
+        dns-client:
+            fs-task-processor: fs-task-processor
+
+        handler-ping:
+            path: /ping
+            method: GET
+            task_processor: main-task-processor
+            throttling_enabled: false
+            url_trailing_slash: strict-match
+
+        db-postgres:
+            dbconnection: $dbconnection
+
+        storage-credential: {}
+
+        usecase-auth:
+            jwt-secret: $jwt-secret
+            user-service-url: $user-service-url
+
+        handler-register:
+            path: /v1/auth/register
+            method: POST
+            task_processor: main-task-processor
+
+        handler-login:
+            path: /v1/auth/login
+            method: POST
+            task_processor: main-task-processor
+
+        handler-validate:
+            path: /v1/auth/validate
+            method: GET
+            task_processor: main-task-processor

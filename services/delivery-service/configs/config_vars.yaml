@@ -1,0 +1,11 @@
+worker-threads: 4
+worker-fs-threads: 2
+logger-level: info
+
+is-testing: false
+
+server-port: 8080
+
+dbconnection: "postgresql://postgres:postgres@delivery-service-db:5432/delivery-service"
+
+user-service-url: "http://user-service:8080/v1"
