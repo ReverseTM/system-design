@@ -31,20 +31,17 @@ services:
       - ./postgres/auth-service/schema.sql:/docker-entrypoint-initdb.d/init.sql
     restart: unless-stopped
 
-  package-service-db:
-    image: postgres:17
-    container_name: package-service-db
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=package-service
+  package-service-mongo:
+    image: mongo:7
+    container_name: package-service-mongo
     ports:
-      - "5434:5432"
+      - "27017:27017"
     networks:
       - backend
     volumes:
-      - package_postgres_data:/var/lib/postgresql/data
-      - ./postgres/package-service/schema.sql:/docker-entrypoint-initdb.d/init.sql
+      - package_mongo_data:/data/db
+      - ./mongo/package-service/validation.js:/docker-entrypoint-initdb.d/01_validation.js
+      - ./mongo/package-service/data.js:/docker-entrypoint-initdb.d/02_data.js
     restart: unless-stopped
 
   delivery-service-db:
@@ -113,7 +110,7 @@ services:
     networks:
       - backend
     depends_on:
-      package-service-db:
+      package-service-mongo:
         condition: service_started
     restart: unless-stopped
     healthcheck:
@@ -183,7 +180,7 @@ services:
 volumes:
   user_postgres_data:
   auth_postgres_data:
-  package_postgres_data:
+  package_mongo_data:
   delivery_postgres_data:
 
   user_service_data:

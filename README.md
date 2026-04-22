@@ -3,7 +3,7 @@
 ## Оглавление
 
 - [Архитектура](#архитектура)
-- [Схема базы данных](#схема-базы-данных)
+- [Схема баз данных](#схема-баз-данных)
   - [auth-service](#auth-service)
   - [user-service](#user-service)
   - [package-service](#package-service)
@@ -32,9 +32,11 @@ Client -> nginx:8080 -> auth-service -> user-service -> package-service -> deliv
 
 Все запросы проходят через nginx. Защищённые эндпоинты требуют заголовок `Authorization: Bearer <token>` — nginx проверяет токен через `auth-service` перед проксированием.
 
-## Схема базы данных
+## Схема баз данных
 
 ### auth-service
+
+> Хранилище — **PostgreSQL** (таблица `credentials`).
 
 **`credentials`** — учётные данные пользователей
 
@@ -51,6 +53,8 @@ Client -> nginx:8080 -> auth-service -> user-service -> package-service -> deliv
 ---
 
 ### user-service
+
+> Хранилище — **PostgreSQL** (таблица `users`).
 
 **`users`** — профили пользователей
 
@@ -72,26 +76,32 @@ Client -> nginx:8080 -> auth-service -> user-service -> package-service -> deliv
 
 ### package-service
 
-**`packages`** — посылки
+> Хранилище — **MongoDB** (коллекция `packages`).
 
-| Колонка       | Тип              | Описание                             |
-|---------------|------------------|--------------------------------------|
-| `id`          | BIGSERIAL PK     | Идентификатор посылки                |
-| `user_id`     | BIGINT           | ID владельца посылки                 |
-| `weight`      | DOUBLE PRECISION | Вес (> 0)                            |
-| `length`      | DOUBLE PRECISION | Длина (> 0)                          |
-| `width`       | DOUBLE PRECISION | Ширина (> 0)                         |
-| `height`      | DOUBLE PRECISION | Высота (> 0)                         |
-| `description` | VARCHAR(255)     | Описание (по умолчанию пустая строка)|
-| `created_at`  | TIMESTAMPTZ      | Время создания                       |
+**Структура документа:**
 
-Индексы: составной по `(user_id, created_at DESC, id DESC)`.
+| Поле              | Тип      | Описание                              |
+|-------------------|----------|---------------------------------------|
+| `_id`             | ObjectId | Идентификатор посылки                 |
+| `user_id`         | Long     | ID владельца посылки                  |
+| `weight`          | Double   | Вес в кг (> 0)                        |
+| `dimensions.length` | Double | Длина в см (> 0)                     |
+| `dimensions.width`  | Double | Ширина в см (> 0)                    |
+| `dimensions.height` | Double | Высота в см (> 0)                    |
+| `description`     | String   | Описание (макс. 255 символов)         |
+| `created_at`      | Date     | Время создания                        |
 
-Запросы к этой таблице [запросы](./postgres/package-service/queries.sql)
+`dimensions` — embedded document (габариты всегда читаются и пишутся вместе).
+
+Индексы: составной по `{ user_id: 1, created_at: -1 }`.
+
+[Документная модель и обоснование](./mongo/package-service/schema_design.md) · [CRUD-запросы](./mongo/package-service/queries.js) · [Валидация схемы](./mongo/package-service/validation.js)
 
 ---
 
 ### delivery-service
+
+> Хранилище — **PostgreSQL** (таблица `deliveries`).
 
 **`deliveries`** — доставки
 
@@ -100,7 +110,7 @@ Client -> nginx:8080 -> auth-service -> user-service -> package-service -> deliv
 | `id`           | BIGSERIAL PK | Идентификатор доставки                                             |
 | `sender_id`    | BIGINT       | ID отправителя                                                     |
 | `recipient_id` | BIGINT       | ID получателя (≠ sender_id)                                        |
-| `package_id`   | BIGINT       | Уникальный ID посылки                                              |
+| `package_id`   | VARCHAR(24)  | Уникальный ID посылки (MongoDB ObjectId)                           |
 | `address`      | VARCHAR(128) | Адрес доставки (непустой)                                          |
 | `status`       | VARCHAR(32)  | Статус: `created`, `in_progress`, `delivered`, `cancelled`         |
 | `created_at`   | TIMESTAMPTZ  | Время создания                                                     |
@@ -157,11 +167,20 @@ make db/fill
 ```bash
 make db/fill/auth-service
 make db/fill/user-service
-make db/fill/package-service
 make db/fill/delivery-service
 ```
 
 Данные берутся из файлов `postgres/<service>/data.sql`.
+
+### package-service (MongoDB)
+
+Тестовые данные для package-service загружаются автоматически при первом запуске контейнера `package-service-mongo` из файла `mongo/package-service/data.js`.
+
+Для ручного запуска:
+
+```bash
+docker compose exec package-service-mongo mongosh package-service /docker-entrypoint-initdb.d/02_data.js
+```
 
 ## API
 
@@ -274,7 +293,7 @@ curl -X POST http://localhost:8080/v1/auth/register \
 curl -X POST http://localhost:8080/v1/deliveries \
   -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' \
-  -d '{"sender_id":1,"recipient_id":2,"package_id":10,"address":"Moscow, Lenina 1"}'
+  -d '{"sender_id":1,"recipient_id":2,"package_id":"6629a1f3e4b0c123456789ab","address":"Moscow, Lenina 1"}'
 ```
 
 **Получение доставок по отправителю**

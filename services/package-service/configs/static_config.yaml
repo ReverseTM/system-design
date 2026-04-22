@@ -37,8 +37,8 @@ components_manager:
             throttling_enabled: false
             url_trailing_slash: strict-match
 
-        db-postgres:
-            dbconnection: $dbconnection
+        mongo-package:
+            dbconnection: $mongo-uri
 
         storage-package: {}
 

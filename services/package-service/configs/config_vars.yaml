@@ -6,4 +6,4 @@ is-testing: false
 
 server-port: 8080
 
-dbconnection: "postgresql://postgres:postgres@package-service-db:5432/package-service"
+mongo-uri: "mongodb://package-service-mongo:27017/package-service"

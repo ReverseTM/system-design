@@ -5,8 +5,7 @@ components:
       additionalProperties: false
       properties:
         id:
-          type: integer
-          format: int64
+          type: string
         user_id:
           type: integer
           format: int64
@@ -62,8 +61,7 @@ components:
       additionalProperties: false
       properties:
         id:
-          type: integer
-          format: int64
+          type: string
         message:
           type: string
           default: ""

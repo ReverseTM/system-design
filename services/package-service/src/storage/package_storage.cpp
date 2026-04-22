@@ -1,57 +1,76 @@
 #include "package_storage.hpp"
 
+#include <chrono>
+
 #include <userver/components/component_context.hpp>
-#include <userver/storages/postgres/component.hpp>
-#include <userver/storages/postgres/query.hpp>
+#include <userver/formats/bson/inline.hpp>
+#include <userver/formats/bson/types.hpp>
+#include <userver/formats/bson/value_builder.hpp>
+#include <userver/storages/mongo/collection.hpp>
+#include <userver/storages/mongo/component.hpp>
+#include <userver/storages/mongo/options.hpp>
+#include <userver/utils/datetime.hpp>
 
 namespace storage {
-    namespace {
-        const userver::storages::postgres::Query kInsertPackage
-        {
-            R"(
-                INSERT INTO packages (user_id, weight, length, width, height, description)
-                VALUES ($1, $2, $3, $4, $5, $6)
-                RETURNING id;
-            )"
-        };
-
-        const userver::storages::postgres::Query kSelectByUser
-        {
-            R"(
-                SELECT id, user_id, weight, length, width, height, description, created_at::text
-                FROM packages
-                WHERE user_id = $1
-                ORDER BY created_at DESC, id DESC;
-            )"
-        };
-    }
-
     PackageStorage::PackageStorage(
         const userver::components::ComponentConfig& config,
         const userver::components::ComponentContext& context
     ) : ComponentBase(config, context),
-        cluster_(context.FindComponent<userver::components::Postgres>("db-postgres").GetCluster())
+        pool_(context.FindComponent<userver::components::Mongo>("mongo-package").GetPool())
     {
 
     }
 
-    int64_t PackageStorage::CreatePackage(const package::dto::CreatePackageRequestBody& request) const
+    std::string PackageStorage::CreatePackage(const package::dto::CreatePackageRequestBody& request) const
     {
-        auto result = cluster_->Execute(
-            userver::storages::postgres::ClusterHostType::kMaster, kInsertPackage,
-            request.user_id, request.weight, request.length, request.width, request.height, request.description
-        );
+        auto collection = pool_->GetCollection("packages");
 
-        return result.AsSingleRow<int64_t>();
+        userver::formats::bson::Oid oid;
+
+        userver::formats::bson::ValueBuilder dim(userver::formats::bson::ValueBuilder::Type::kObject);
+        dim["length"] = request.length;
+        dim["width"]  = request.width;
+        dim["height"] = request.height;
+
+        userver::formats::bson::ValueBuilder doc(userver::formats::bson::ValueBuilder::Type::kObject);
+        doc["_id"]         = oid;
+        doc["user_id"]     = request.user_id;
+        doc["weight"]      = request.weight;
+        doc["dimensions"]  = dim.ExtractValue();
+        doc["description"] = request.description;
+        doc["created_at"]  = std::chrono::system_clock::now();
+
+        collection.InsertOne(doc.ExtractValue());
+
+        return oid.ToString();
     }
 
     std::vector<package::dto::Package> PackageStorage::GetPackagesByUser(int64_t user_id) const
     {
-        auto result = cluster_->Execute(
-            userver::storages::postgres::ClusterHostType::kSlave, kSelectByUser,
-            user_id
+        auto collection = pool_->GetCollection("packages");
+
+        auto cursor = collection.Find(
+            userver::formats::bson::MakeDoc("user_id", user_id),
+            userver::storages::mongo::options::Sort{
+                {"created_at", userver::storages::mongo::options::Sort::kDescending}
+            }
         );
 
-        return result.AsContainer<std::vector<package::dto::Package>>(userver::storages::postgres::kRowTag);
+        std::vector<package::dto::Package> packages;
+        for (auto doc : cursor) {
+            package::dto::Package pkg;
+            pkg.id          = doc["_id"].As<userver::formats::bson::Oid>().ToString();
+            pkg.user_id     = doc["user_id"].As<int64_t>();
+            pkg.weight      = doc["weight"].As<double>();
+            pkg.length      = doc["dimensions"]["length"].As<double>();
+            pkg.width       = doc["dimensions"]["width"].As<double>();
+            pkg.height      = doc["dimensions"]["height"].As<double>();
+            pkg.description = doc["description"].As<std::string>();
+            auto tp         = doc["created_at"].As<std::chrono::system_clock::time_point>();
+            pkg.created_at  = userver::utils::datetime::Timestring(tp);
+            packages.push_back(std::move(pkg));
+        }
+
+        return packages;
     }
 }

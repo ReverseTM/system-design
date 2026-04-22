@@ -10,7 +10,7 @@ INSERT INTO deliveries (sender_id, recipient_id, package_id, address, status)
 SELECT
     g.id,
     (g.id % 999999) + 1,
-    g.id,
+    lpad(to_hex(g.id), 24, '0'),
     addresses[(g.id % array_length(addresses, 1)) + 1],
     statuses[(g.id % array_length(statuses, 1)) + 1]
 FROM generate_series(1, 1000000) AS g(id);

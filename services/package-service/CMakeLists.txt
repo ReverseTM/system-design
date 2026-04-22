@@ -6,7 +6,7 @@ include(DownloadUserver)
 
 find_package(
     userver
-    COMPONENTS core chaotic postgresql #
+    COMPONENTS core chaotic mongo #
     QUIET
 )
 if(NOT userver_FOUND)
@@ -37,7 +37,7 @@ add_library(
 target_link_libraries(
     ${PROJECT_NAME}_objs
     PUBLIC userver::core #
-    PUBLIC userver::postgresql #
+    PUBLIC userver::mongo #
     PUBLIC ${PROJECT_NAME}-chgen #
 )
 target_include_directories(${PROJECT_NAME}_objs PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/)

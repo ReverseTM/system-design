@@ -14,8 +14,7 @@ components:
           type: integer
           format: int64
         package_id:
-          type: integer
-          format: int64
+          type: string
         address:
           type: string
         status:
@@ -42,8 +41,7 @@ components:
           type: integer
           format: int64
         package_id:
-          type: integer
-          format: int64
+          type: string
         address:
           type: string
       required:

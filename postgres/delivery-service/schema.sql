@@ -2,7 +2,7 @@ CREATE TABLE IF NOT EXISTS deliveries (
     id BIGSERIAL PRIMARY KEY,
     sender_id BIGINT NOT NULL,
     recipient_id BIGINT NOT NULL,
-    package_id BIGINT UNIQUE NOT NULL,
+    package_id VARCHAR(24) UNIQUE NOT NULL,
     address VARCHAR(128) NOT NULL,
     status VARCHAR(32) NOT NULL DEFAULT 'created',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

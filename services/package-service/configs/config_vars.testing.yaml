@@ -6,4 +6,4 @@ is-testing: true
 
 server-port: 8080
 
-dbconnection: "postgresql://postgres:postgres@localhost:5432/package-service-test"
+mongo-uri: "mongodb://localhost:27017/package-service-test"
