@@ -6,7 +6,7 @@ include(DownloadUserver)
 
 find_package(
     userver
-    COMPONENTS core chaotic mongo #
+    COMPONENTS core chaotic mongo redis #
     QUIET
 )
 if(NOT userver_FOUND)
@@ -38,6 +38,7 @@ target_link_libraries(
     ${PROJECT_NAME}_objs
     PUBLIC userver::core #
     PUBLIC userver::mongo #
+    PUBLIC userver::redis #
     PUBLIC ${PROJECT_NAME}-chgen #
 )
 target_include_directories(${PROJECT_NAME}_objs PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/)

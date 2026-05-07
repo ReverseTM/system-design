@@ -6,8 +6,10 @@ is-testing: false
 
 server-port: 8080
 
-sqlite-db-path: "/var/lib/auth-service/credential.db"
+dbconnection: "postgresql://postgres:postgres@auth-service-db:5432/auth-service"
 
-user-service-url: "http://user-service:8080/v1/users"
+user-service-url: "http://user-service:8080/v1"
 
 jwt-secret: "change-me-in-production-use-a-long-random-secret"
+
+secdist-path: "/etc/auth_service/secdist.json"

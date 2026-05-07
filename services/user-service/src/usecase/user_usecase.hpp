@@ -4,6 +4,7 @@
 #include <string>
 
 #include <userver/components/component_base.hpp>
+#include <userver/storages/redis/client.hpp>
 
 #include <schemas/user.hpp>
 #include <storage/user_storage.hpp>
@@ -32,6 +33,7 @@ namespace usecase {
 
     private:
         storage::UserStorage& storage_;
+        userver::storages::redis::ClientPtr redis_client_;
     };
 
 }

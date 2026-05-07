@@ -27,6 +27,20 @@ components_manager:
 
         testsuite-support: {}
 
+        default-secdist-provider:
+            config: $secdist-path
+
+        secdist: {}
+
+        redis-cache:
+            groups:
+              - config_name: cache
+                db: cache
+            subscribe_groups: []
+            thread_pools:
+                redis_thread_pool_size: 4
+                sentinel_thread_pool_size: 1
+
         http-client:
         http-client-core:
             fs-task-processor: fs-task-processor

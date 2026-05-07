@@ -6,7 +6,7 @@ include(DownloadUserver)
 
 find_package(
     userver
-    COMPONENTS core chaotic postgresql #
+    COMPONENTS core chaotic postgresql redis #
     QUIET
 )
 if(NOT userver_FOUND)
@@ -58,6 +58,7 @@ target_link_libraries(
     ${PROJECT_NAME}_objs
     PUBLIC userver::core #
     PUBLIC userver::postgresql #
+    PUBLIC userver::redis #
     PUBLIC jwt-cpp::jwt-cpp #
     PUBLIC ${PROJECT_NAME}-chgen #
 )

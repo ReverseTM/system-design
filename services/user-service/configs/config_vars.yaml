@@ -7,3 +7,5 @@ is-testing: false
 server-port: 8080
 
 dbconnection: "postgresql://postgres:postgres@user-service-db:5432/user-service"
+
+secdist-path: "/etc/user_service/secdist.json"

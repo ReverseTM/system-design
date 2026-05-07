@@ -3,6 +3,9 @@
 ## Оглавление
 
 - [Архитектура](#архитектура)
+- [Оптимизация производительности](#оптимизация-производительности)
+  - [Кеширование](#кеширование)
+  - [Rate Limiting](#rate-limiting)
 - [Схема баз данных](#схема-баз-данных)
   - [auth-service](#auth-service)
   - [user-service](#user-service)
@@ -24,13 +27,47 @@
 
 ## Архитектура
 
-Микросервисная система управления доставками. Включает 4 сервиса, nginx-шлюз с JWT-аутентификацией и Swagger UI.
+Микросервисная система управления доставками. Включает 4 сервиса, Redis, nginx-шлюз с JWT-аутентификацией и Swagger UI.
 
 ```
 Client -> nginx:8080 -> auth-service -> user-service -> package-service -> delivery-service
 ```
 
 Все запросы проходят через nginx. Защищённые эндпоинты требуют заголовок `Authorization: Bearer <token>` — nginx проверяет токен через `auth-service` перед проксированием.
+
+## Оптимизация производительности
+
+Подробное описание стратегий: [performance_design.md](./performance_design.md)
+
+### Кеширование
+
+Используется Redis (Cache-Aside стратегия) для двух наиболее нагруженных `GET`-endpoint'ов:
+
+| Endpoint                       | Сервис          | TTL    | Инвалидация             |
+|--------------------------------|-----------------|--------|-------------------------|
+| `GET /v1/users?login=...`      | user-service    | 300 с  | При `POST /v1/users`    |
+| `GET /v1/packages?user_id=...` | package-service | 120 с  | При `POST /v1/packages` |
+
+Логика: при запросе сначала проверяется Redis. При cache miss — данные берутся из БД и кладутся в Redis с TTL. При создании записи соответствующий ключ явно удаляется.
+
+### Rate Limiting
+
+`POST /v1/auth/login` — Fixed Window Counter через Redis INCR:
+
+- **Лимит**: 10 запросов / 60 секунд на IP (IP берётся из заголовка `X-Real-IP`)
+- **При превышении**: `HTTP 429 Too Many Requests`
+- **Заголовки ответа**: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`
+
+```bash
+# Пример ответа при превышении лимита
+HTTP/1.1 429 Too Many Requests
+X-RateLimit-Limit: 10
+X-RateLimit-Remaining: 0
+X-RateLimit-Reset: 60
+{"code": 429, "message": "Too many requests. Please try again later."}
+```
+
+---
 
 ## Схема баз данных
 
@@ -80,16 +117,16 @@ Client -> nginx:8080 -> auth-service -> user-service -> package-service -> deliv
 
 **Структура документа:**
 
-| Поле              | Тип      | Описание                              |
-|-------------------|----------|---------------------------------------|
-| `_id`             | ObjectId | Идентификатор посылки                 |
-| `user_id`         | Long     | ID владельца посылки                  |
-| `weight`          | Double   | Вес в кг (> 0)                        |
-| `dimensions.length` | Double | Длина в см (> 0)                     |
-| `dimensions.width`  | Double | Ширина в см (> 0)                    |
-| `dimensions.height` | Double | Высота в см (> 0)                    |
-| `description`     | String   | Описание (макс. 255 символов)         |
-| `created_at`      | Date     | Время создания                        |
+| Поле                | Тип      | Описание                      |
+|---------------------|----------|-------------------------------|
+| `_id`               | ObjectId | Идентификатор посылки         |
+| `user_id`           | Long     | ID владельца посылки          |
+| `weight`            | Double   | Вес в кг (> 0)                |
+| `dimensions.length` | Double   | Длина в см (> 0)              |
+| `dimensions.width`  | Double   | Ширина в см (> 0)             |
+| `dimensions.height` | Double   | Высота в см (> 0)             |
+| `description`       | String   | Описание (макс. 255 символов) |
+| `created_at`        | Date     | Время создания                |
 
 `dimensions` — embedded document (габариты всегда читаются и пишутся вместе).
 

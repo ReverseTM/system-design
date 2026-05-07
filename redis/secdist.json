@@ -1,0 +1,9 @@
+{
+    "redis_settings": {
+        "cache": {
+            "sentinels": [{"host": "redis-sentinel", "port": 26379}],
+            "shards": [{"name": "mymaster"}],
+            "password": ""
+        }
+    }
+}

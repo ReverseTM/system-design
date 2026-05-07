@@ -2,6 +2,7 @@
 
 #include <userver/components/component_fwd.hpp>
 #include <userver/server/handlers/http_handler_json_base.hpp>
+#include <userver/storages/redis/client.hpp>
 
 #include <usecase/auth_usecase.hpp>
 
@@ -24,5 +25,6 @@ namespace handlers {
 
         private:
             usecase::AuthUseCase& usecase_;
+            userver::storages::redis::ClientPtr redis_client_;
     };
 }

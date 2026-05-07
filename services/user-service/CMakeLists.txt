@@ -6,7 +6,7 @@ include(DownloadUserver)
 
 find_package(
     userver
-    COMPONENTS core chaotic postgresql #
+    COMPONENTS core chaotic postgresql redis #
     QUIET
 )
 if(NOT userver_FOUND)
@@ -39,6 +39,7 @@ target_link_libraries(
     ${PROJECT_NAME}_objs
     PUBLIC userver::core #
     PUBLIC userver::postgresql #
+    PUBLIC userver::redis #
     PUBLIC ${PROJECT_NAME}-chgen #
 )
 target_include_directories(${PROJECT_NAME}_objs PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/)
