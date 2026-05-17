@@ -28,10 +28,10 @@ namespace usecase {
         const userver::components::ComponentContext& context
     ) : ComponentBase(config, context),
         storage_(context.FindComponent<storage::DeliveryStorage>()),
+        producer_(context.FindComponent<producer::DeliveryProducer>()),
         http_client_(context.FindComponent<userver::components::HttpClient>().GetHttpClient()),
         user_service_url_(config["user-service-url"].As<std::string>())
     {
-
     }
 
     void DeliveryUseCase::CheckUserExists(int64_t user_id) const
@@ -72,6 +72,8 @@ namespace usecase {
         CheckUserExists(request.recipient_id);
 
         const auto id = storage_.CreateDelivery(request);
+
+        producer_.PublishDeliveryCreated(id, request.sender_id, request.recipient_id);
 
         return delivery::dto::CreateDeliveryResponseBody{
             .id      = id,

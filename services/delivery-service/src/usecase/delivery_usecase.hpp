@@ -6,6 +6,7 @@
 #include <userver/components/component_base.hpp>
 #include <userver/yaml_config/merge_schemas.hpp>
 
+#include <producer/delivery_producer.hpp>
 #include <storage/delivery_storage.hpp>
 #include <schemas/delivery.hpp>
 
@@ -36,6 +37,7 @@ namespace usecase {
             void CheckUserExists(int64_t user_id) const;
 
             storage::DeliveryStorage& storage_;
+            producer::DeliveryProducer& producer_;
             userver::clients::http::Client& http_client_;
             std::string user_service_url_;
     };

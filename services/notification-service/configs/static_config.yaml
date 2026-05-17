@@ -27,10 +27,6 @@ components_manager:
 
         testsuite-support: {}
 
-        http-client:
-        http-client-core:
-            fs-task-processor: fs-task-processor
-
         dns-client:
             fs-task-processor: fs-task-processor
 
@@ -54,22 +50,7 @@ components_manager:
             max_in_flight_requests: 5
             use_secure_connection: false
 
-        db-postgres:
-            dbconnection: $dbconnection
-
-        storage-delivery: {}
-
-        producer-delivery: {}
-
-        usecase-delivery:
-            user-service-url: $user-service-url
-
-        handler-create-delivery:
-            path: /v1/deliveries
-            method: POST
-            task_processor: main-task-processor
-
-        handler-get-deliveries:
-            path: /v1/deliveries
-            method: GET
-            task_processor: main-task-processor
+        consumer-notification:
+            rabbit_name: my-rabbit
+            queue: notification-queue
+            prefetch_count: 10

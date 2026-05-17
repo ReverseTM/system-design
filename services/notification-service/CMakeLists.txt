@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 3.12...3.31)
-project(delivery_service CXX)
+project(notification_service CXX)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(DownloadUserver)
 
 find_package(
     userver
-    COMPONENTS core chaotic postgresql rabbitmq #
+    COMPONENTS core rabbitmq #
     QUIET
 )
 if(NOT userver_FOUND)
@@ -16,43 +16,20 @@ endif()
 
 userver_setup_environment()
 
-# Chaotic codegen
-file(GLOB_RECURSE SCHEMAS ${CMAKE_CURRENT_SOURCE_DIR}/schemas/*.yaml)
-userver_target_generate_chaotic(
-    ${PROJECT_NAME}-chgen
-    GENERATE_SERIALIZERS
-    LAYOUT "/components/schemas/([^/]*)/=delivery::dto::{0}"
-    OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/src
-    SCHEMAS ${SCHEMAS}
-    RELATIVE_TO ${CMAKE_CURRENT_SOURCE_DIR}
-)
-
 add_library(
     ${PROJECT_NAME}_objs OBJECT
-    src/producer/delivery_producer.cpp
-    src/storage/delivery_storage.cpp
-    src/usecase/delivery_usecase.cpp
-    src/handlers/create_delivery_handler.cpp
-    src/handlers/get_deliveries_handler.cpp
+    src/consumer/notification_consumer.cpp
 )
 target_link_libraries(
     ${PROJECT_NAME}_objs
-    PUBLIC userver::core       #
-    PUBLIC userver::postgresql #
-    PUBLIC userver::rabbitmq   #
-    PUBLIC ${PROJECT_NAME}-chgen #
+    PUBLIC userver::core     #
+    PUBLIC userver::rabbitmq #
 )
 target_include_directories(${PROJECT_NAME}_objs PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/)
 
 # The Service
 add_executable(${PROJECT_NAME} src/main.cpp)
 target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAME}_objs)
-
-# Functional testing
-option(ENABLE_TESTS "Build and register tests" ON)
-if(ENABLE_TESTS)
-    userver_testsuite_add_simple()
-endif()
 
 # Install
 include(GNUInstallDirs)

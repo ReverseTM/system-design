@@ -1,0 +1,7 @@
+worker-threads: 2
+worker-fs-threads: 1
+logger-level: info
+
+server-port: 8080
+
+secdist: /etc/notification_service/secdist.json

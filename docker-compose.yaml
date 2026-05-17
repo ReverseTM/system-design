@@ -60,6 +60,24 @@ services:
       - ./postgres/delivery-service/schema.sql:/docker-entrypoint-initdb.d/init.sql
     restart: unless-stopped
 
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - backend
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   redis:
     image: redis:7-alpine
     container_name: redis
@@ -169,12 +187,35 @@ services:
     image: delivery-service:latest
     volumes:
       - delivery_service_data:/var/lib/delivery-service
+      - ./rabbitmq/secdist.json:/etc/delivery_service/secdist.json:ro
     networks:
       - backend
     depends_on:
       delivery-service-db:
         condition: service_started
       user-service:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  notification-service:
+    build:
+      context: ./services/notification-service
+      dockerfile: Dockerfile
+    image: notification-service:latest
+    volumes:
+      - notification_service_data:/var/lib/notification-service
+      - ./rabbitmq/secdist.json:/etc/notification_service/secdist.json:ro
+    networks:
+      - backend
+    depends_on:
+      rabbitmq:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
@@ -230,6 +271,7 @@ volumes:
   auth_service_data:
   package_service_data:
   delivery_service_data:
+  notification_service_data:
 
 networks:
   backend:

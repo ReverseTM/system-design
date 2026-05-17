@@ -27,13 +27,23 @@
 
 ## Архитектура
 
-Микросервисная система управления доставками. Включает 4 сервиса, Redis, nginx-шлюз с JWT-аутентификацией и Swagger UI.
+Микросервисная система управления доставками. Включает 5 сервисов, RabbitMQ, Redis, nginx-шлюз с JWT-аутентификацией и Swagger UI.
 
 ```
 Client -> nginx:8080 -> auth-service -> user-service -> package-service -> delivery-service
+                                                                                  |
+                                                                              RabbitMQ
+                                                                                  |
+                                                                        notification-service
 ```
 
 Все запросы проходят через nginx. Защищённые эндпоинты требуют заголовок `Authorization: Bearer <token>` — nginx проверяет токен через `auth-service` перед проксированием.
+
+### Event-Driven архитектура
+
+При создании доставки `delivery-service` публикует событие `delivery.created` в RabbitMQ (exchange: `delivery-events`, тип: topic). `notification-service` подписан на очередь `notification-queue` и обрабатывает все события доставки.
+
+Подробнее: [event_driven_design.md](./event_driven_design.md) | [event_catalog.md](./event_catalog.md)
 
 ## Оптимизация производительности
 
@@ -175,12 +185,35 @@ make docker/build/auth-service
 make docker/build/user-service
 make docker/build/package-service
 make docker/build/delivery-service
+make docker/build/notification-service
 ```
 
 Запустить все сервисы и базы данных
 
 ```bash
 make services/start
+```
+
+### RabbitMQ
+
+После запуска RabbitMQ Management UI доступен по адресу:
+
+```
+http://localhost:15672
+login: guest / password: guest
+```
+
+Проверить получение событий:
+
+```bash
+# Создать доставку (публикует delivery.created в RabbitMQ)
+curl -X POST http://localhost:8080/v1/deliveries \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"sender_id": 1, "recipient_id": 2, "package_id": "<package_id>"}'
+
+# Посмотреть логи notification-service (consumer)
+docker logs notification-service -f
 ```
 
 Остановить все сервисы и базы данных
